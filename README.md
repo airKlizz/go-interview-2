@@ -12,5 +12,5 @@ They are prefixed with a number that corresponds to the order of navigation, but
 Let's start with the first step:
 
 ```bash
-git checkout 1-getting-starting
+git checkout 1-getting-started
 ```
