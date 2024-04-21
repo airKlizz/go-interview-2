@@ -27,7 +27,7 @@ type Controller struct {
 func (c *Controller) Handle(ctx context.Context, event *domain.Event) error {}
 ```
 
-The controller knows the lights available and can handle events. An event is part of the domain definition of the application:
+The controller knows the lights available and can handle events. An event is part of the domain definition of the application
 
 ```go
 type Event struct {
@@ -91,7 +91,7 @@ The objective here is to get the data from the HTTP call and to call the server 
 > **🛠️ Action Required:**
 > Implement the handler functions in the `http.go` file. The functions should parse the incoming request data and call the appropriate server methods. Here is an example of how to [parse JSON requests](https://go.dev/play/p/y_LWUROls8j).
 
-When the `HttpServer` is implemented, you can look at the `cmd/http/main.go` file, which handles the dependency injections and starts the HTTP server. Then, run:
+When the `HttpServer` is implemented, you can look at the `cmd/http/main.go` file, which handles the dependency injections and starts the HTTP server. Then, run
 
 ```bash
 go run cmd/http/main.go
