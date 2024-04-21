@@ -1,140 +1,144 @@
 # Goome
 
-## 2 - Interface
+## 3 - Hexagonal
 
-We have seen how to change the color of the bulb but this is very specific to the bulb we are using.
-We can use an interface to make is less specific.
+### Vocabulary
 
-### Folder structure
-
-In Go, there are multiple ways of organizing a project and no specific rules expect one: all the package defined in the `internal/` folder cannot be imported by other projects.
-However, the following [standard](https://github.com/golang-standards/project-layout) is usually respected.
-In two words:
-
-* `/cmd` contains the main applications of the project
-* `/pkg` contains public packages
-* `/internal` contains private packages
-
-To respect the standard, we can move our `main.go` in a new `cmd` folder:
-
-```bash
-mkdir cmd && mv main.go cmd/main.go
-```
-
-### Light interface
-
-An interface in Go is a type which is a named collection of method signatures.
-For our light interface we can define it as follows (`/internal/core/port/light.go`):
+We can continue building the application and now see how to controlle the bulb.
+If we think our application following the hexagonal architecture, the light interface is a driven port and the Shelly MQTT implementation of it is an adapter.
+We now need a driving port to controlle the light that we call `Server`:
 
 ```go
-type Light interface {
-	SwitchOn(ctx context.Context) error
-	SwitchOff(ctx context.Context) error
-	ChangeColor(ctx context.Context, color *domain.Color) error
-	ChangeWhite(ctx context.Context, white *domain.White) error
+type Server interface {
+	LightOn(ctx context.Context, name string) error
+	LightOff(ctx context.Context, name string) error
+	LightChangeColor(ctx context.Context, name string, color *domain.Color) error
+	LightChangeWhite(ctx context.Context, name string, white *domain.White) error
 }
 ```
 
-We can switch on/off a light and change the color or the white temperature.
+We can imagine multiple adapters of the `Server` port: a http server, a CLI, a website.
 
-The `Color` and `White` objects are parts of our domain (`/internal/core/domain/colors.go`):
+To make the link between the driving and the driven ports, we have the controller service:
 
 ```go
-type Color struct {
-	Red   int32
-	Green int32
-	Blue  int32
-	White int32
-	Gain  int32
+type Controller struct {
+	lights     map[string]driven.Light
 }
 
-type White struct {
-	Temp       int32
-	Brightness int32
-}
+func (c *Controller) Handle(ctx context.Context, event *domain.Event) error {}
 ```
 
-Now that we have the interface and the domain defined, we can implement the light interface for our Shelly MQTT.
-To implement an interface, the first step is to create a struct that has the methods defined in the interface:
+The controller knows the lights available and can handle events.
+A event is part of the domain definition of the application:
 
 ```go
-type ShellyMqtt struct {
+type Event struct {
+	Target string
+	Device Device
+	Action Action
+	Args   *Args
 }
 
-func (c *ShellyMqtt) ChangeColor(ctx context.Context, color *domain.Color) error {
-	panic("not implemented")
-}
+type Device string
 
-func (c *ShellyMqtt) ChangeWhite(ctx context.Context, white *domain.White) error {
-	panic("not implemented")
-}
-
-func (c *ShellyMqtt) SwitchOff(ctx context.Context) error {
-	panic("not implemented")
-}
-
-func (c *ShellyMqtt) SwitchOn(ctx context.Context) error {
-	panic("not implemented")
-}
-```
-
-A good practice is to also create a constructor that returns the interface, this makes sure the struct implements well the interface:
-
-```go
-func NewShellyMqtt() port.Light {
-	return nil
-}
-```
-
-🫵 Based on the previously made `main.go` file, you can complete the constructor and the methods. We want the Shelly MQTT struct to produce MQTT messages to perform the actions.
-The documentation of the Shelly bulb can help: [source](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
-
-Once the `shelly.go` file completed, we can use the `ShellyMqtt` to change the color of the bulb to green.
-Replace the content of  `cmd/main.go` with:
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"log"
-	"mynewgoproject/internal/adapter/light"
-	"mynewgoproject/internal/core/domain"
+const (
+	Light  = "light"
 )
 
-func main() {
-	bulb := light.NewShellyMqtt()
-	err := bulb.ChangeColor(context.Background(), &domain.Color{
-		Red:   0,
-		Green: 255,
-		Blue:  0,
-		White: 0,
-		Gain:  100,
-	})
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to change color: %w", err))
-	}
-	log.Println("successfully changed color")
+type Action string
+
+const (
+	On          = "on"
+	Off         = "off"
+	ChangeColor = "change_color"
+	ChangeWhite = "change_white"
+)
+
+type Args struct {
+	OnArgs          *OnArgs
+	OffArgs         *OffArgs
+	ChangeColorArgs *ChangeColorArgs
+	ChangeWhiteArgs *ChangeWhiteArgs
+}
+
+type OnArgs struct{}
+
+type OffArgs struct{}
+
+type ChangeColorArgs struct {
+	Color *Color
+}
+
+type ChangeWhiteArgs struct {
+	White *White
 }
 ```
 
-You can adapt the code based on your implementation of the `ShellyMqtt` and run it with:
+You can have a look to all the new files in `internal`.
+The services are already implemented.
+
+### Server adapters
+
+Now the vocabulary of the application is defined, we can work on implementing adapters of the server port to actually controlle the bulb.
+
+We will do two adapters, a HTTP server and a CLI
+
+#### HTTP server
+
+In go, there are plenty of HTTP server, one of the most used is [Gin](https://github.com/gin-gonic/gin).
+
+A structure of an implementation of a Gin server is made in the `internal/adapter/driving/server/http.go` file.
+There is a structure `HttpServer` which contains a `Server` and which can `Run()` to start the HTTP server.
+
+The objective here is to get the data from the HTTP call and to call the server with this data.
+
+🫵 You can implement the Gin handler function of the file. The function should bind the data and call the server. Here is a useful [link](https://gin-gonic.com/docs/examples/bind-query-or-post/) to the Gin documentation.
+
+When the `HttpServer` is implemented, you can look to the `cmd/http/main.go` file which does the dependency injections and start the HTTP server, and run:
 
 ```bash
-go run cmd/main.go
+go run cmd/http/main.go
 ```
+
+to start the HTTP server.
+
+You can change the bulb color with a curl command:
+
+```bash
+curl -X POST --data '{"name": "mock", "color": {"blue": 200, "gain": 100}}' http://localhost:8080/light/color
+```
+
+The color of the bulb on [http://localhost:3333/](http://localhost:3333/) or using `make bulb-color` should be blue.
+
+#### CLI
+
+For building a CLI able to controlle the bulb, we can use the [Cobra](https://github.com/spf13/cobra) package.
+Similar to what we did for the HTTP server, we create a structure `CliServer` which contains a `Server` and which can `Run()` to execute the CLI.
+
+The code is verbose for writing a CLI, therefore it is already written.
+You can look at it in `internal/adapter/driving/server/cli.go`.
+
+🫵 You can copy the `cmd/http/main.go` file into `cmd/cli/main.go` file and adapt it to not run the `HttpServer` but the `CliServer`.
+
+Run:
+
+```bash
+go run cmd/cli/main.go light color -n mock -r 100 -b 200 -g 100
+```
+
+This changes the color of the bulb to purple using the CLI.
 
 ## Next
 
-If your `ShellyMqtt` is working correctly, you can directly go to the next step:
+To see the solutions:
 
 ```bash
-git checkout 3-hexagonal
+git checkout 3-interface-end
 ```
 
-If you want to see the `light.go` completed:
+To go to the next step:
 
 ```bash
-git checkout 2-interface-end
+git checkout 4-testing
 ```
