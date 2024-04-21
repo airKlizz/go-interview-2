@@ -34,7 +34,13 @@ func (s *HttpServer) lightOn() func(ctx *gin.Context) {
 		Name string
 	}
 	return func(ctx *gin.Context) {
-		panic("not implemented")
+		var a args
+		if err := ctx.ShouldBindJSON(&a); err != nil {
+			ctx.JSON(http.StatusBadRequest, newResponse(err.Error()))
+			return
+		}
+		err := s.s.LightOn(ctx, a.Name)
+		handleErrorHttp(ctx, err)
 	}
 }
 
@@ -43,7 +49,13 @@ func (s *HttpServer) lightOff() func(ctx *gin.Context) {
 		Name string
 	}
 	return func(ctx *gin.Context) {
-		panic("not implemented")
+		var a args
+		if err := ctx.ShouldBindJSON(&a); err != nil {
+			ctx.JSON(http.StatusBadRequest, newResponse(err.Error()))
+			return
+		}
+		err := s.s.LightOff(ctx, a.Name)
+		handleErrorHttp(ctx, err)
 	}
 }
 
@@ -53,7 +65,13 @@ func (s *HttpServer) lightChangeColor() func(ctx *gin.Context) {
 		Color *domain.Color
 	}
 	return func(ctx *gin.Context) {
-		panic("not implemented")
+		var a args
+		if err := ctx.ShouldBindJSON(&a); err != nil {
+			ctx.JSON(http.StatusBadRequest, newResponse(err.Error()))
+			return
+		}
+		err := s.s.LightChangeColor(ctx, a.Name, a.Color)
+		handleErrorHttp(ctx, err)
 	}
 }
 
@@ -63,7 +81,13 @@ func (s *HttpServer) lightChangeWhite() func(ctx *gin.Context) {
 		White *domain.White
 	}
 	return func(ctx *gin.Context) {
-		panic("not implemented")
+		var a args
+		if err := ctx.ShouldBindJSON(&a); err != nil {
+			ctx.JSON(http.StatusBadRequest, newResponse(err.Error()))
+			return
+		}
+		err := s.s.LightChangeWhite(ctx, a.Name, a.White)
+		handleErrorHttp(ctx, err)
 	}
 }
 
