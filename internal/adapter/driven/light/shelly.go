@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mynewgoproject/internal/core/domain"
-	"mynewgoproject/internal/core/port"
+	"mynewgoproject/internal/core/port/driven"
 	"strings"
 	"time"
 
@@ -16,7 +16,7 @@ type ShellyMqtt struct {
 	topic  string
 }
 
-func NewShellyMqtt(broker string, port uint, username string, topic string) (port.Light, error) {
+func NewShellyMqtt(broker string, port uint, username string, topic string) (driven.Light, error) {
 	opts := MQTT.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
 	opts.SetUsername(username)
