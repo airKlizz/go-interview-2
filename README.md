@@ -119,7 +119,7 @@ func main() {
 }
 ```
 
-and run it with:
+You can adapt the code based on your implementation of the `ShellyMqtt` and run it with:
 
 ```bash
 go run cmd/main.go
