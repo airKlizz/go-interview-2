@@ -1,44 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"time"
-
-	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"mynewgoproject/internal/adapter/light"
+	"mynewgoproject/internal/core/domain"
 )
 
 func main() {
-
-	// Init the MQTT client
-	opts := MQTT.NewClientOptions()
-	opts.AddBroker("tcp://localhost:1883")
-	opts.SetUsername("mynewgoproject")
-	client := MQTT.NewClient(opts)
-	if token := client.Connect(); !token.WaitTimeout(time.Second) || token.Error() != nil {
-		log.Fatal(fmt.Errorf("failed to init mqtt client: %w", token.Error()))
+	bulb, err := light.NewShellyMqtt("localhost", 1883, "shellymock", "shellies/shellycolorbulb-mock/")
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to init the bulb: %w", err))
 	}
-
-	// Publish message to the bulb topic
-	data := `
-	{
-		"mode": "color",    
-		"red": 255,           
-		"green": 0,         
-		"blue": 0,        
-		"gain": 100,        
-		"brightness": 0,  
-		"white": 0,         
-		"temp": 0,       
-		"effect": 0,        
-		"turn": "on",       
-		"transition": 500  
+	err = bulb.ChangeColor(context.Background(), &domain.Color{
+		Red:   0,
+		Green: 255,
+		Blue:  0,
+		White: 0,
+		Gain:  100,
+	})
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to change color: %w", err))
 	}
-	`
-	token := client.Publish("shellies/shellycolorbulb-mock/color/0/set", 0, false, data)
-	if !token.WaitTimeout(time.Second) || token.Error() != nil {
-		log.Fatal(fmt.Errorf("failed to publish data to mqtt: %w", token.Error()))
-	}
-
-	log.Println("message successfully sent to mqtt")
+	log.Println("successfully changed color")
 }
