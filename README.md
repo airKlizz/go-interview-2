@@ -134,7 +134,7 @@ This changes the color of the bulb to purple using the CLI.
 To see the solutions:
 
 ```bash
-git checkout 3-interface-end
+git checkout 3-hexagonal-end
 ```
 
 To go to the next step:
