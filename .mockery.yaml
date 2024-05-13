@@ -1,0 +1,10 @@
+filename: "mock_{{.InterfaceName}}.go"
+dir: "{{.InterfaceDir}}"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "{{.PackageName}}"
+inpackage: True
+packages:
+  mynewgoproject/internal/core/port/driven:
+    config:
+      all: True
+    

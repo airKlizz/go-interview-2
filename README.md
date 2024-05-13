@@ -1,141 +1,174 @@
 # Goome
 
-## 3 - Hexagonal
+## 4 - Testing
 
-### Vocabulary
+### Overview
 
-We can continue building the application and now see how to control the bulb. If we think of our application following the hexagonal architecture, the light interface is a driven port, and the Shelly MQTT implementation of it is an adapter. We now need a driving port to control the light, which we call `Server`:
+In Golang, testing is made with the official testing [package](https://pkg.go.dev/testing).
+I invite you to read the begining of the page to have a quick overview of how test a Go application.
+There are specificities but in two words:
+
+* a function starting with `Test`, having `*testing.T` in arg, and in a file ended with `_test.go` is a test (`func TestXxx(*testing.T)`)
+* you can test in the same package as the application (without exporting the package) or in a separate `_test` package for "black box" testing
+* there are naming conventions for the names of a test function
+* tests can be run using `go test`
+
+Here is a valid test sample:
 
 ```go
-type Server interface {
-	LightOn(ctx context.Context, name string) error
-	LightOff(ctx context.Context, name string) error
-	LightChangeColor(ctx context.Context, name string, color *domain.Color) error
-	LightChangeWhite(ctx context.Context, name string, white *domain.White) error
+package abs
+
+import "testing"
+
+func TestAbs(t *testing.T) {
+    got := Abs(-1)
+    if got != 1 {
+        t.Errorf("Abs(-1) = %d; want 1", got)
+    }
 }
 ```
 
-We can imagine multiple adapters of the `Server` port: an HTTP server, a CLI, a website.
+In addition to the official `testing` package, the [`testify` package](https://github.com/stretchr/testify) is widely used for assertions and testing:
 
-To make the link between the driving and the driven ports, we have the controller service:
+```golang
+package abs
 
-```go
-type Controller struct {
-	lights     map[string]driven.Light
-}
-
-func (c *Controller) Handle(ctx context.Context, event *domain.Event) error {}
-```
-
-The controller knows the lights available and can handle events. An event is part of the domain definition of the application
-
-```go
-type Event struct {
-	Target string
-	Device Device
-	Action Action
-	Args   *Args
-}
-
-type Device string
-
-const (
-	Light  = "light"
+import (
+	"testing"
+	"github.com/stretchr/testify/assert"
 )
 
-type Action string
+func TestAbs(t *testing.T) {
+    got := Abs(-1)
+    if got != 1 {
+        assert.Equal(t, 1, got)
+    }
+}
+```
 
-const (
-	On          = "on"
-	Off         = "off"
-	ChangeColor = "change_color"
-	ChangeWhite = "change_white"
+### First test
+
+Let's create the first test for our project.
+We can add tests for the `Controller` struct (`internal/core/service/controller.go`).
+
+#### Mocking
+
+The `Controller` struct is using the `Light` driven port.
+For testing only the code of the `Controller` struct, we need to mock the `Light` interface.
+There are multiple ways of creating mocks in Golang.
+Among them, the [`mockery` package](https://github.com/vektra/mockery) allows to automaticaly generate a mock from an interface.
+Install it by running ([or other way](https://vektra.github.io/mockery/latest/installation/)):
+
+```bash
+go install github.com/vektra/mockery/v2@v2.43.0
+```
+
+and generate the mocks using:
+
+```bash
+mockery
+```
+
+> you can have a look to the `.mockery.yaml` file to see the configuration of the tool
+
+#### Table-Driven test
+
+Now that we have the mock we need, we can create the test for the `Controller`.
+First, create the `controller_test.go` file in the same folder with the following content:
+
+```go
+package service
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"mynewgoproject/internal/core/domain"
+	"mynewgoproject/internal/core/port/driven"
+
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
-type Args struct {
-	OnArgs          *OnArgs
-	OffArgs         *OffArgs
-	ChangeColorArgs *ChangeColorArgs
-	ChangeWhiteArgs *ChangeWhiteArgs
-}
-
-type OnArgs struct{}
-
-type OffArgs struct{}
-
-type ChangeColorArgs struct {
-	Color *Color
-}
-
-type ChangeWhiteArgs struct {
-	White *White
+func TestController_Handle(t *testing.T) {
+	type fields struct {
+		lights map[string]func() driven.Light
+	}
+	type args struct {
+		event *domain.Event
+	}
+	tests := map[string]struct {
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// include tests here
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			c := NewController()
+			for name, light := range tt.fields.lights {
+				c.WithLight(name, light())
+			}
+			err := c.Handle(context.TODO(), tt.args.event)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 ```
 
-You can have a look at all the new files in `internal`. The services are already implemented so you can skip it if you want.
+>
+> table-driven tests are usually used in Golang but this is not a need
 
-### Server Adapters
-
-Now that the vocabulary of the application is defined, we can work on implementing adapters of the server port to actually control the bulb.
-
-We will create two adapters: an HTTP server and a CLI.
-
-#### HTTP Server
-
-In Go, we can use the standard `net/http` package to create an HTTP server.
-
-A structure of an implementation of an HTTP server is made in the `internal/adapter/driving/server/http.go` file. There is a structure `HttpServer` which contains a `Server` and which can `Run()` to start the HTTP server.
-
-The objective here is to get the data from the HTTP call and to call the server with this data.
-
-> **🛠️ Action Required:**
-> Implement the handler functions in the `http.go` file. The functions should parse the incoming request data and call the appropriate server methods. Here is an example of how to [parse JSON requests](https://go.dev/play/p/y_LWUROls8j).
-
-When the `HttpServer` is implemented, you can look at the `cmd/http/main.go` file, which handles the dependency injections and starts the HTTP server. Then, run
+To run the test with coverage, do:
 
 ```bash
-go run cmd/http/main.go
+go test mynewgoproject/internal/core/service -cover
 ```
 
-to start the HTTP server.
+You should see 0% of coverage which is expected as there is no test case yet.
 
-> **🛠️ Action Required:**
-> You can change the bulb color with a curl command:
+You can add some test cases to increase the coverage of service package.
 
-```bash
-curl -X POST --data '{"name": "mock", "color": {"blue": 200, "gain": 100}}' http://localhost:8080/light/color
+For exemple, this is a valid test case:
+
+```go
+"OK switch on light": {
+	fields: fields{
+		lights: map[string]func() driven.Light{
+			"bedroom": func() driven.Light {
+				m := driven.NewMockLight(t)
+				m.EXPECT().SwitchOn(mock.Anything).Return(nil)
+				return m
+			},
+		},
+	},
+	args: args{
+		event: &domain.Event{Target: "bedroom", Device: domain.Light, Action: domain.On},
+	},
+},
 ```
 
-The color of the bulb on [http://localhost:3333/](http://localhost:3333/) or using `make bulb-color` should be blue.
+#### Yet another test
 
-#### CLI
-
-To build a CLI capable of controlling the bulb, we can use the [Cobra](https://github.com/spf13/cobra) package. Similar to what we did for the HTTP server, we create a structure `CliServer` which contains a `Server` and which can `Run()` to execute the CLI.
-
-The code is verbose for writing a CLI, so it is already written. You can look at it in `internal/adapter/driving/server/cli.go`.
-
-> **🛠️ Action Required:**
-> Copy the `cmd/http/main.go` file into `cmd/cli/main.go` and adapt it to run the `CliServer` instead of the `HttpServer`.
-
-> **🛠️ Action Required:**
-> Run:
-
-```bash
-go run cmd/cli/main.go light color -n mock -r 100 -b 200 -g 100
-```
-
-This changes the color of the bulb to purple using the CLI.
+Following the same principle, you can create tests for the server.
+Copy-paste the `controller_test.go` into `server_test.go` and adapt to the `Server` struct.
 
 ## Next
 
 To see the solutions:
 
 ```bash
-git checkout 3-hexagonal-end
+git checkout 4-testing-end
 ```
 
 To go to the next step:
 
 ```bash
-git checkout 4-testing
+git checkout 5-data-validation
 ```
