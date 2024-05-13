@@ -50,7 +50,7 @@ Let's create the first test for our project. We can add tests for the `Controlle
 
 #### Mocking
 
-The `Controller` struct is using the `Light` driven port. For testing only the code of the `Controller` struct, we need to mock the `Light` interface. There are multiple ways of creating mocks in Golang. Among them, the [`mockery` package](https://github.com/vektra/mockery) allows us to automatically generate a mock from an interface. Install it by running ([or other way](https://vektra.github.io/mockery/latest/installation/)):
+The `Controller` struct is using the `Light` driven port. For testing only the code of the `Controller` struct, we need to mock the `Light` interface. There are multiple ways of creating mocks in Golang. Among them, the [`mockery` package](https://github.com/vektra/mockery) allows us to automatically generate a mock from an interface. Install it by running ([or other way](https://vektra.github.io/mockery/latest/installation/))
 
 ```bash
 go install github.com/vektra/mockery/v2@v2.43.0
@@ -131,7 +131,7 @@ You should see 0% coverage which is expected as there is no test case yet.
 > **🛠️ Action Required:**
 > You can add some test cases to increase the coverage of the service package.
 
-For example, this is a valid test case:
+For example, this is a valid test case
 
 ```go
 "OK switch on light": {
