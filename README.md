@@ -47,7 +47,6 @@ func main() {
 	}
 	fmt.Println("user valid")
 }
-```
 
 #### Installation
 
@@ -124,7 +123,7 @@ It should say:
 cli.go:94: failed to change color of the light
 ```
 
-which is expected but not very helpful. We will next explore error management in Golang.
+which is expected but not very helpful. We will next explore error management in Golang
 
 ## Next
 
