@@ -1,8 +1,8 @@
 # Goome
 
-## 4 - Testing
+## 5 - Data validation
 
-### Overview
+### Test the data validation
 
 In Golang, testing is made with the official testing [package](https://pkg.go.dev/testing). I invite you to read the beginning of the page to have a quick overview of how to test a Go application. There are specificities but in two words:
 
@@ -11,38 +11,55 @@ In Golang, testing is made with the official testing [package](https://pkg.go.de
 - There are naming conventions for the names of a test function.
 - Tests can be run using `go test`.
 
-Here is a valid test sample:
+### Data validation with CUE
+
+#### Introduction to CUE
+
+CUE is a [data validation language](https://cuelang.org/docs/introduction/) written in Go which make it relatively well integrated with Go (despite not perfect yet).
+
+One of the usage of CUE is to define a schema in the CUE language and to validate data based on this schema.
+It can validates JSON, YAML, and Go structs which is what we will use.
+
+#### Schema
+
+We define the schemas in the `internal/core/domain` folder.
+Create a `cue` folder that will contains our CUE schemas:
+
+```bash
+mkdir internal/core/domain/cue 
+```
+
+Then create a `colors.cue` file that contains:
+
+```cue
+package cue
+
+#Color: {
+	Red:   uint & >=0 & <=255
+	Green: uint & >=0 & <=255
+	Blue:  uint & >=0 & <=255
+	White: uint & >=0 & <=255
+	Gain:  uint & >=0 & <=100
+}
+
+#White: {
+	Temp:       uint & >=3000 & <=6500
+	Brightness: uint & >=0 & <=100
+}
+```
+
+It defines constraints for the Go structs contain in the `colors.go` file.
 
 ```go
 package abs
 
-import "testing"
+```cue
+package cue
 
-func TestAbs(t *testing.T) {
-    got := Abs(-1)
-    if got != 1 {
-        t.Errorf("Abs(-1) = %d; want 1", got)
-    }
+Event: {
+	Target: string
+	Device: "light"
 }
-```
-
-In addition to the official `testing` package, the [`testify` package](https://github.com/stretchr/testify) is widely used for assertions and testing:
-
-```go
-package abs
-
-import (
-	"testing"
-	"github.com/stretchr/testify/assert"
-)
-
-func TestAbs(t *testing.T) {
-    got := Abs(-1)
-    if got != 1 {
-        assert.Equal(t, 1, got)
-    }
-}
-```
 
 ### First Test
 
@@ -107,23 +124,43 @@ func TestController_Handle(t *testing.T) {
 			for name, light := range tt.fields.lights {
 				c.WithLight(name, light())
 			}
-			err := c.Handle(context.TODO(), tt.args.event)
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+		}
+	} |
+	{
+		Action: "change_white"
+		Args: {
+			ChangeWhiteArgs: {
+				White: #White
 			}
-		})
+		}
 	}
-}
 ```
 
 > **Note:** Table-driven tests are usually used in Golang but this is not a requirement.
 
-To run the test with coverage, do:
+- `Device` can only be `"light"` as we support only this device.
+- Each `Action` should come with its `Args`
+
+#### Validation
+
+CUE provides a Go [package](https://pkg.go.dev/cuelang.org/go@v0.8.2/encoding/gocode) to generate Go validation code to the struct of a package based on a CUE schema.
+
+We will take advantage of `go generate` to generate validation code for the domain structs based on the CUE schema automaticaly.
+
+The code for this is not very interesting, therefore it is already present in the project:
+
+- `internal/core/domain/cue.mod` file to define the CUE module name
+- `internal/core/domain/doc.go` file containing the call to special comment for generation. The comment in the file simply says: run `go run ../../utils/gen/cue.go` when `go generate` is ran on this package.
+- `internal/utils/gen/cue.go` file that contains the code to use the CUE packages to generate the validation methods for the structs.
+
+With these files in the project, by running:
 
 ```bash
-go test mynewgoproject/internal/core/service -cover
+# install new packages
+go mod tidy 
+
+# generate code
+go generate ./...
 ```
 
 You should see 0% coverage which is expected as there is no test case yet.
@@ -133,21 +170,24 @@ You should see 0% coverage which is expected as there is no test case yet.
 
 For example, this is a valid test case
 
-```go
-"OK switch on light": {
-	fields: fields{
-		lights: map[string]func() driven.Light{
-			"bedroom": func() driven.Light {
-				m := driven.NewMockLight(t)
-				m.EXPECT().SwitchOn(mock.Anything).Return(nil)
-				return m
-			},
-		},
-	},
-	args: args{
-		event: &domain.Event{Target: "bedroom", Device: domain.Light, Action: domain.On},
-	},
-},
+When you run again the test in `server_test.go` it should fail as it returns an error.
+Adapt the test to expect an error when the input data is not valid.
+
+Now our service only accepts valid input data.
+
+### Usage
+
+To make sure it works, we can do a quick manual test.
+
+```bash
+# start local stack if not already up
+make stack-up
+
+# build the CLI
+go build ./cmd/cli/main.go
+
+# use the CLI with invalid data
+./main light color -n bedroom -r 0 -b 400 -g 200
 ```
 
 #### Yet Another Test
@@ -160,11 +200,11 @@ For example, this is a valid test case
 To see the solutions:
 
 ```bash
-git checkout 4-testing-end
+git checkout 5-data-validation-end
 ```
 
 To go to the next step:
 
 ```bash
-git checkout 5-data-validation
+git checkout 6-errors
 ```
