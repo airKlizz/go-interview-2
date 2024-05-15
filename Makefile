@@ -6,3 +6,9 @@ stack-down:
 
 bulb-color:
 	@echo $$(curl -s http://localhost:3333/echo)
+
+mock:
+	mockery
+
+testing:
+	go test ./... -cover
