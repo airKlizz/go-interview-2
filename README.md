@@ -74,7 +74,6 @@ Implement the following method in `event.go`:
 func (e *Event) Validate() error {
 	panic("not implemented")
 }
-```
 
 Use the validator package as shown in the example. Also, check the correct args for each action.
 
