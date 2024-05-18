@@ -41,6 +41,21 @@ func TestServer_LightChangeColor(t *testing.T) {
 				color: &domain.Color{Blue: 200},
 			},
 		},
+		"KO change color with invalid color": {
+			fields: fields{
+				lights: map[string]func() driven.Light{
+					"bedroom": func() driven.Light {
+						m := driven.NewMockLight(t)
+						return m
+					},
+				},
+			},
+			args: args{
+				name:  "bedroom",
+				color: &domain.Color{Blue: 500},
+			},
+			wantErr: true,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
