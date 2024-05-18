@@ -12,8 +12,8 @@ import (
 
 var cuegenvalEvent = cuegenMake("Event", &Event{})
 
-// Validate validates x.
-func (x *Event) Validate() error {
+// validate validates x.
+func (x *Event) validate() error {
 	return cuegenCodec.Validate(cuegenvalEvent, x)
 }
 
