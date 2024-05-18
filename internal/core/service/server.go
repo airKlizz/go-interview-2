@@ -29,7 +29,7 @@ func (s *Server) LightChangeColor(ctx context.Context, name string, color *domai
 	}
 	err := event.Validate()
 	if err != nil {
-		return err
+		return domain.NewErrEventNotValid(err)
 	}
 	return s.c.Handle(ctx, event)
 }
@@ -47,7 +47,7 @@ func (s *Server) LightChangeWhite(ctx context.Context, name string, white *domai
 	}
 	err := event.Validate()
 	if err != nil {
-		return err
+		return domain.NewErrEventNotValid(err)
 	}
 	return s.c.Handle(ctx, event)
 }
@@ -60,7 +60,7 @@ func (s *Server) LightOff(ctx context.Context, name string) error {
 	}
 	err := event.Validate()
 	if err != nil {
-		return err
+		return domain.NewErrEventNotValid(err)
 	}
 	return s.c.Handle(ctx, event)
 }
@@ -73,7 +73,7 @@ func (s *Server) LightOn(ctx context.Context, name string) error {
 	}
 	err := event.Validate()
 	if err != nil {
-		return err
+		return domain.NewErrEventNotValid(err)
 	}
 	return s.c.Handle(ctx, event)
 }

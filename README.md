@@ -1,127 +1,89 @@
 # Goome
 
-## 5 - Data validation
+## 6 - Errors
 
-### Test the data validation
+### Objective
 
-First of all we can see what happen with the current code when we want to change the color of the light with a color not valid.
+We have seen that when an error occured, we have no information about it when using the CLI or the HTTP server.
+We would like to differenciate the different errors, to be able to respond the correct HTTP code for example.
 
-Add a test case to the `TestServer_LightChangeColor` function that tests to change the color with an invalid color (`Blue: 500` for example).
-We see that it works but we would prefer the server to return some kind of error that says the color is not valid.
+### Errors in Golang
 
-### Data validation with [validator](https://github.com/go-playground/validator)
-
-#### Introduction to the package
-
-The [validator](https://github.com/go-playground/validator) package allows to perform struct validation in Golang using tags in the structs.
-
-Here is a basic example of use of the package:
+In Golang create a custom error is as simple as:
 
 ```go
-package main
+var ErrNoObjectsFound = errors.New("no objects found")
+```
+
+This works in many cases and is widely used.
+
+This approach allows to differentiate errors from each other but does not allow to add context to the error.
+For exemple, we can create a custom error for an event not valid:
+
+```go
+var ErrEventNotValid = errors.New("event not valid")
+```
+
+but we cannot add the reasons why the event is not valid.
+
+To do so, we can create a new struct that implements the `error` interface:
+
+```go
+type error interface {
+	Error() string
+}
+```
+
+### ErrEventNotValid
+
+Let's create this custom error.
+
+In the `internal/core/domain` folder, create a new file called `errors.go` with the following content:
+
+```go
+package domain
 
 import (
 	"fmt"
-	"github.com/go-playground/validator/v10"
+	"strings"
+
+	cue "cuelang.org/go/cue/errors"
 )
 
-// Define a sample struct to validate
-type User struct {
-	Name     string `validate:"required"`
-	Email    string `validate:"required,email"`
-	Age      int    `validate:"min=0,max=130"`
-	Username string `validate:"required,min=3,max=16"`
+var (
+	ErrorEventNotValid = ErrEventNotValid{} // event is not valid
+)
+
+type ErrEventNotValid struct {
+	details []string
 }
 
-func main() {
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	user := User{
-		Name:     "John Doe",
-		Email:    "john@example.com",
-		Age:      25,
-		Username: "johndoe123",
+func NewErrEventNotValid(err error) error {
+	details := []string{}
+	for _, err := range cue.Errors(err) {
+		details = append(details, fmt.Sprintf("%s %s", err.Error(), strings.Join(err.Path(), "/")))
 	}
-	err := validate.Struct(user)
-	if err != nil {
-		fmt.Println("user not valid")
+	return ErrEventNotValid{
+		details: details,
 	}
-	fmt.Println("user valid")
+}
+
+func (err ErrEventNotValid) Error() string {
+	return fmt.Sprintf("event not valid: %s", strings.Join(err.details, ", "))
+}
+
+func (err ErrEventNotValid) Is(target error) bool {
+	_, ok := target.(ErrEventNotValid)
+	return ok
 }
 ```
 
-#### Installation
+We create a struct `ErrEventNotValid` with as details the error message coming from the CUE validation.
+In the constructor we create the details of the error.
+The struct implements the `error` interface with the `Error() string` method.
+We also implement the `Is(target error) bool` method to make the `Is` function from the `errors` standard package working (see [doc](https://pkg.go.dev/errors#Is) for details).
 
-The package has been added to the `go.mod` file, so you can simply run:
-
-```bash
-go mod download
-```
-
-#### Validate Event
-
-First of all to use it, add the correct tags to the structs in the `internal/core/domain/colors.go` and `internal/core/domain/event.go` files.
-
-Respect the following rules:
-
-* 0 <= Red, Green, Blue, White <= 255
-* 0 <= Gain, Brightness <= 100
-* 3000 <= Temp <= 6500
-* Device should be one of "light"
-* Action should be one of "on off change_color change_white"
-
-Then, add the following method to the `event.go` file and implement it:
-
-```go
-func (e *Event) Validate() error {
-	panic("not implemented")
-}
-```
-
-Use the validator package like in the example but check also the correct args are present for the action (i.e. if the action is change_color then the change color args should be present)
-
-When the implementation is done, run:
-
-```bash
-go test mynewgoproject/internal/core/domain
-```
-
-to make sure the implementation is correct.
-
-### Usage
-
-#### Validate Event in server
-
-Let's start by modifying the test case we added just before in `TestServer_LightChangeColor` with an invalid Blue value to make it match what we want.
-We want the `LightChangeColor` method to return an error when calling with an invalid color.
-Therefore change the `wantErr` bool of the test case to true and remove the expected call to the mock.
-
-When running the test you should see an error.
-
-Modify the code in `internal/core/service/server.go` to call the validate method of the Event struct and pass the test.
-
-#### Manual test
-
-To make sure it works, we can do a quick manual test.
-
-```bash
-# start local stack if not already up
-make stack-up
-
-# build the CLI
-go build ./cmd/cli/main.go
-
-# use the CLI with invalid data
-./main light color -n bedroom -r 0 -b 400 -g 200
-```
-
-It should says:
-
-```bash
-cli.go:94: failed to change color of the light
-```
-
-which is ok but not really helpful.
-We will see next one way to manage errors in Golang.
+### Usage of the custom error
 
 ## Next
 
