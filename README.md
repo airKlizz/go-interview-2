@@ -197,22 +197,7 @@ Let's start by modifying the test case we added just before in `TestServer_Light
 We want the `LightChangeColor` method to return an error when calling with an invalid color.
 Therefore change the `wantErr` bool of the test case to true and remove the expected call to the mock.
 
-When running the test you should see something similar to:
-
-```bash
-$ go test mynewgoproject/internal/core/service       
---- FAIL: TestServer_LightChangeColor (0.00s)
-    --- FAIL: TestServer_LightChangeColor/KO_color_not_valid (0.00s)
-        server_test.go:72: 
-                Error Trace:    goome/internal/core/service/server_test.go:72
-                Error:          An error is expected but got nil.
-                Test:           TestServer_LightChangeColor/KO_color_not_valid
-    mock_Light.go:220: PASS:    ChangeColor(string,*domain.Color)
-    mock_Light.go:220: PASS:    ChangeColor(string,*domain.Color)
-FAIL
-FAIL    mynewgoproject/internal/core/service    0.339s
-FAIL
-```
+When running the test you should see an error.
 
 Modify the code in `internal/core/service/server.go` to call the validate method of the Event struct and pass the test.
 
