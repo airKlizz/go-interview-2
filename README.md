@@ -9,120 +9,112 @@ First of all we can see what happen with the current code when we want to change
 Add a test case to the `TestServer_LightChangeColor` function that tests to change the color with an invalid color (`Blue: 500` for example).
 We see that it works but we would prefer the server to return some kind of error that says the color is not valid.
 
-### Data validation with CUE
+### Data validation with [validator](https://github.com/go-playground/validator)
 
-#### Introduction to CUE
+#### Introduction to the package
 
-CUE is a [data validation language](https://cuelang.org/docs/introduction/) written in Go which make it relatively well integrated with Go (despite not perfect yet).
+The [validator](https://github.com/go-playground/validator) package allows to perform struct validation in Golang using tags in the structs.
 
-One of the usage of CUE is to define a schema in the CUE language and to validate data based on this schema.
-It can validates JSON, YAML, and Go structs which is what we will use.
+Here is a basic example of use of the package:
 
-#### Schema
+```go
+package main
 
-We define the schemas in the `internal/core/domain` folder.
-Create a `cue` folder that will contains our CUE schemas:
+import (
+	"fmt"
+	"github.com/go-playground/validator/v10"
+)
 
-```bash
-mkdir internal/core/domain/cue 
-```
-
-Then create a `colors.cue` file that contains:
-
-```cue
-package cue
-
-#Color: {
-	Red:   uint & >=0 & <=255
-	Green: uint & >=0 & <=255
-	Blue:  uint & >=0 & <=255
-	White: uint & >=0 & <=255
-	Gain:  uint & >=0 & <=100
+// Define a sample struct to validate
+type User struct {
+	Name     string `validate:"required"`
+	Email    string `validate:"required,email"`
+	Age      int    `validate:"min=0,max=130"`
+	Username string `validate:"required,min=3,max=16"`
 }
 
-#White: {
-	Temp:       uint & >=3000 & <=6500
-	Brightness: uint & >=0 & <=100
-}
-```
-
-It defines constraints for the Go structs contain in the `colors.go` file.
-
-In a similar way, we can define constraints for the `Event` struct.
-The schema is a bit more complex (`internal/core/domain/cue/event.cue`):
-
-```cue
-package cue
-
-Event: {
-	Target: string
-	Device: "light"
-}
-
-Event:
-	{
-		Action: "on"
-	} |
-	{
-		Action: "off"
-	} |
-	{
-		Action: "change_color"
-		Args: {
-			ChangeColorArgs: {
-				Color: #Color
-			}
-		}
-	} |
-	{
-		Action: "change_white"
-		Args: {
-			ChangeWhiteArgs: {
-				White: #White
-			}
-		}
+func main() {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	user := User{
+		Name:     "John Doe",
+		Email:    "john@example.com",
+		Age:      25,
+		Username: "johndoe123",
 	}
+	err := validate.Struct(user)
+	if err != nil {
+		fmt.Println("user not valid")
+	}
+	fmt.Println("user valid")
+}
 ```
 
-The schema says:
+#### Installation
 
-* `Device` can only be `"light"` as we support only this device.
-* Each `Action` should come with its `Args`
-
-#### Validation
-
-CUE provides a Go [package](https://pkg.go.dev/cuelang.org/go@v0.8.2/encoding/gocode) to generate Go validation code to the struct of a package based on a CUE schema.
-
-We will take advantage of `go generate` to generate validation code for the domain structs based on the CUE schema automaticaly.
-
-The code for this is not very interesting, therefore it is already present in the project:
-
-* `internal/core/domain/cue.mod` file to define the CUE module name
-* `internal/core/domain/doc.go` file containing the call to special comment for generation. The comment in the file simply says: run `go run ../../utils/gen/cue.go` when `go generate` is ran on this package.
-* `internal/utils/gen/cue.go` file that contains the code to use the CUE packages to generate the validation methods for the structs.
-
-With these files in the project, by running:
+The package has been added to the `go.mod` file, so you can simply run:
 
 ```bash
-# install new packages
-go mod tidy 
-
-# generate code
-go generate ./...
+go mod download
 ```
 
-it will create the `internal/core/domain/cue_gen.go` file which contains the `Validate()` methods for the `Event` struct.
+#### Validate Event
 
-### Validate events
+First of all to use it, add the correct tags to the structs in the `internal/core/domain/colors.go` and `internal/core/domain/event.go` files.
 
-Now that the `Event` struct has a `Validate() error` method, use it in the `Server` methods to return an error if the created event is not valid.
+Respect the following rules:
 
-When you run again the test in `server_test.go` it should fail as it returns an error.
-Adapt the test to expect an error when the input data is not valid.
+* 0 <= Red, Green, Blue, White <= 255
+* 0 <= Gain, Brightness <= 100
+* 3000 <= Temp <= 6500
+* Device should be one if "light"
+* Action should be one if "on off change_color change_white"
 
-Now our service only accepts valid input data.
+Then, add the following method to the `event.go` file and implement it:
+
+```go
+func (e *Event) Validate() error {
+	panic("not implemented")
+}
+```
+
+Use the validator package like in the example but check also the correct args are present for the action (i.e. if the action is change_color then the change color args should be present)
+
+When the implementation is done, run:
+
+```bash
+go test mynewgoproject/internal/core/domain
+```
+
+to make sure the implementation is correct.
 
 ### Usage
+
+#### Validate Event in server
+
+Let's start by modifying the test case we added just before in `TestServer_LightChangeColor` with an invalid Blue value to make it match what we want.
+We want the `LightChangeColor` method to return an error when calling with an invalid color.
+Therefore change the `wantErr` bool of the test case to true and remove the expected call to the mock.
+
+When running the test you should see something similar to:
+
+```bash
+$ go test mynewgoproject/internal/core/service       
+--- FAIL: TestServer_LightChangeColor (0.00s)
+    --- FAIL: TestServer_LightChangeColor/KO_color_not_valid (0.00s)
+        server_test.go:72: 
+                Error Trace:    goome/internal/core/service/server_test.go:72
+                Error:          An error is expected but got nil.
+                Test:           TestServer_LightChangeColor/KO_color_not_valid
+    mock_Light.go:220: PASS:    ChangeColor(string,*domain.Color)
+    mock_Light.go:220: PASS:    ChangeColor(string,*domain.Color)
+FAIL
+FAIL    mynewgoproject/internal/core/service    0.339s
+FAIL
+```
+
+Modify the code in `internal/core/service/server.go` to call the validate method of the Event struct and pass the test.
+
+#### Manual test
 
 To make sure it works, we can do a quick manual test.
 
