@@ -28,32 +28,32 @@ func (c *Controller) Handle(ctx context.Context, event *domain.Event) error {
 	case domain.Light:
 		light, err := c.getLight(event.Target)
 		if err != nil {
-			return err
+			return domain.ErrorDeviceNotFound
 		}
 		switch event.Action {
 		case domain.On:
 			err := light.SwitchOn(ctx)
 			if err != nil {
-				return err
+				return domain.ErrorEventFailed
 			}
 		case domain.Off:
 			err := light.SwitchOff(ctx)
 			if err != nil {
-				return err
+				return domain.ErrorEventFailed
 			}
 		case domain.ChangeColor:
 			err := light.ChangeColor(ctx, event.Args.ChangeColorArgs.Color)
 			if err != nil {
-				return err
+				return domain.ErrorEventFailed
 			}
 		case domain.ChangeWhite:
 			err := light.ChangeWhite(ctx, event.Args.ChangeWhiteArgs.White)
 			if err != nil {
-				return err
+				return domain.ErrorEventFailed
 			}
 		}
 	default:
-		return fmt.Errorf("device %s not supported", event.Device)
+		return domain.ErrorDeviceNotSupported
 	}
 	return nil
 }

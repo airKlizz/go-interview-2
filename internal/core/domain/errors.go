@@ -1,27 +1,30 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
-
-	cue "cuelang.org/go/cue/errors"
+	"strings"
 )
 
 var (
-	ErrorEventNotValid = ErrEventNotValid{} // event is not valid
+	ErrorEventNotValid      = ErrEventNotValid{}                    // event is not valid
+	ErrorDeviceNotSupported = errors.New("device not supported")    // device not supported
+	ErrorDeviceNotFound     = errors.New("device target not found") // device target not found
+	ErrorEventFailed        = errors.New("failed to handle event")  // failed to handle event
 )
 
 type ErrEventNotValid struct {
-	message string
+	reasons []string
 }
 
-func NewErrEventNotValid(err error) error {
+func NewErrEventNotValid(reasons []string) error {
 	return ErrEventNotValid{
-		message: cue.Details(err, nil),
+		reasons: reasons,
 	}
 }
 
 func (err ErrEventNotValid) Error() string {
-	return fmt.Sprintf("event not valid: %s", err.message)
+	return fmt.Sprintf("event not valid: %s", strings.Join(err.reasons, ", "))
 }
 
 func (err ErrEventNotValid) Is(target error) bool {
