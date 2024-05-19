@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"mynewgoproject/internal/core/domain"
 	"mynewgoproject/internal/core/port/driving"
@@ -45,11 +47,7 @@ func (s *CliServer) lightOn() *cobra.Command {
 			ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			err := s.s.LightOn(ctxTimeout, name)
-			if err != nil {
-				log.Println("failed to switch on the light")
-			} else {
-				log.Println("successfully switch on the light")
-			}
+			s.handleError("switch on the ligh", err)
 		},
 	}
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name of the light")
@@ -67,11 +65,7 @@ func (s *CliServer) lightOff() *cobra.Command {
 			ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			err := s.s.LightOff(ctxTimeout, name)
-			if err != nil {
-				log.Println("failed to switch off the light")
-			} else {
-				log.Println("successfully switch off the light")
-			}
+			s.handleError("switch off the ligh", err)
 		},
 	}
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name of the light")
@@ -90,11 +84,7 @@ func (s *CliServer) lightChangeColor() *cobra.Command {
 			ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			err := s.s.LightChangeColor(ctxTimeout, name, &color)
-			if err != nil {
-				log.Println("failed to change color of the light")
-			} else {
-				log.Println("successfully change color of the light")
-			}
+			s.handleError("change color of the light", err)
 		},
 	}
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name of the light")
@@ -118,15 +108,24 @@ func (s *CliServer) lightChangeWhite() *cobra.Command {
 			ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			err := s.s.LightChangeWhite(ctxTimeout, name, &white)
-			if err != nil {
-				log.Println("failed to change white of the light")
-			} else {
-				log.Println("successfully change white of the light")
-			}
+			s.handleError("change white of the light", err)
 		},
 	}
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name of the light")
 	cmd.Flags().Int32VarP(&white.Brightness, "brightness", "b", 50, "Brightness component")
 	cmd.Flags().Int32VarP(&white.Temp, "temp", "t", 4750, "Temp component")
 	return cmd
+}
+
+func (s *CliServer) handleError(action string, err error) {
+	switch {
+	case errors.Is(err, domain.ErrorEventNotValid):
+		log.Println(fmt.Sprintf("❌ failed to %s: %s", action, err.Error()))
+	case errors.Is(err, domain.ErrorDeviceNotFound):
+		log.Println(fmt.Sprintf("🕵️‍♂️ failed to %s: %s", action, err.Error()))
+	case err != nil:
+		log.Println(fmt.Sprintf("🛠️ failed to %s: %s", action, err.Error()))
+	default:
+		log.Println(fmt.Sprintf("✅ successfully %s", action))
+	}
 }
