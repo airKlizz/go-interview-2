@@ -27,9 +27,9 @@ func (s *Server) LightChangeColor(ctx context.Context, name string, color *domai
 			},
 		},
 	}
-	valid, reasons := event.Validate()
-	if !valid {
-		return domain.NewErrEventNotValid(reasons)
+	err := event.Validate()
+	if err != nil {
+		return err
 	}
 	return s.c.Handle(ctx, event)
 }
@@ -45,9 +45,9 @@ func (s *Server) LightChangeWhite(ctx context.Context, name string, white *domai
 			},
 		},
 	}
-	valid, reasons := event.Validate()
-	if !valid {
-		return domain.NewErrEventNotValid(reasons)
+	err := event.Validate()
+	if err != nil {
+		return err
 	}
 	return s.c.Handle(ctx, event)
 }
@@ -58,9 +58,9 @@ func (s *Server) LightOff(ctx context.Context, name string) error {
 		Device: domain.Light,
 		Action: domain.Off,
 	}
-	valid, reasons := event.Validate()
-	if !valid {
-		return domain.NewErrEventNotValid(reasons)
+	err := event.Validate()
+	if err != nil {
+		return err
 	}
 	return s.c.Handle(ctx, event)
 }
@@ -71,9 +71,9 @@ func (s *Server) LightOn(ctx context.Context, name string) error {
 		Device: domain.Light,
 		Action: domain.On,
 	}
-	valid, reasons := event.Validate()
-	if !valid {
-		return domain.NewErrEventNotValid(reasons)
+	err := event.Validate()
+	if err != nil {
+		return err
 	}
 	return s.c.Handle(ctx, event)
 }

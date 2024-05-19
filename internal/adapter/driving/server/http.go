@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"net/http"
 
 	"mynewgoproject/internal/core/domain"
@@ -101,14 +100,11 @@ type response struct {
 func newResponse(message string) response { return response{Message: message} }
 
 func handleErrorHttp(ctx *gin.Context, err error) {
-	switch {
-	case errors.Is(err, domain.ErrorEventNotValid):
-		ctx.JSON(http.StatusBadRequest, newResponse(err.Error()))
-	case errors.Is(err, domain.ErrorDeviceNotFound):
-		ctx.JSON(http.StatusNotFound, newResponse(err.Error()))
-	case err != nil:
+	// we cannot correctly handle error for the moment
+	// it will be improved later
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newResponse(err.Error()))
-	default:
+	} else {
 		ctx.JSON(http.StatusOK, newResponse("success"))
 	}
 }
