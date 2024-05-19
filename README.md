@@ -46,8 +46,6 @@ package domain
 import (
 	"fmt"
 	"strings"
-
-	cue "cuelang.org/go/cue/errors"
 )
 
 var (
@@ -55,21 +53,17 @@ var (
 )
 
 type ErrEventNotValid struct {
-	details []string
+	reasons []string
 }
 
-func NewErrEventNotValid(err error) error {
-	details := []string{}
-	for _, err := range cue.Errors(err) {
-		details = append(details, fmt.Sprintf("%s %s", err.Error(), strings.Join(err.Path(), "/")))
-	}
+func NewErrEventNotValid(reasons []string) error {
 	return ErrEventNotValid{
-		details: details,
+		reasons: reasons,
 	}
 }
 
 func (err ErrEventNotValid) Error() string {
-	return fmt.Sprintf("event not valid: %s", strings.Join(err.details, ", "))
+	return fmt.Sprintf("event not valid: %s", strings.Join(err.reasons, ", "))
 }
 
 func (err ErrEventNotValid) Is(target error) bool {
@@ -78,23 +72,82 @@ func (err ErrEventNotValid) Is(target error) bool {
 }
 ```
 
-We create a struct `ErrEventNotValid` with as details the error message coming from the CUE validation.
-In the constructor we create the details of the error.
+We create a struct `ErrEventNotValid` with as reasons a list of string coming from the validation of the event.
 The struct implements the `error` interface with the `Error() string` method.
 We also implement the `Is(target error) bool` method to make the `Is` function from the `errors` standard package working (see [doc](https://pkg.go.dev/errors#Is) for details).
 
-### Usage of the custom error
+You can have a look to the `Validate` method of the `Event` struct which has been slighly modified to return the reasons when an event is not valid.
+
+### More custom errors
+
+We have seen how to create a custom error with context stored into the error.
+
+We can now create simpler errors for the other things that can be wrong in our application.
+Add the following errors in `errors.go`:
+
+```go
+var (
+	ErrorEventNotValid      = ErrEventNotValid{}                    // event is not valid
+	ErrorDeviceNotSupported = errors.New("device not supported")    // device not supported
+	ErrorDeviceNotFound     = errors.New("device target not found") // device target not found
+	ErrorEventFailed        = errors.New("failed to handle event")  // failed to handle event
+)
+```
+
+### Usage of the custom errors in the services
+
+Modify the `Server` and the `Controller` methods to return the correct errors.
+In `server.go` make the code complient with the new Validate method and use the `NewErrEventNotValid` constructor.
+In `controller.go` replace the return statements with an error in the Handle method with the correct custom error.
+
+At this step, the code returns specific errors depending of what happended in the services but we don't use them in the server adapters (cli and http).
+
+### Usage of the custom errors in the server adapters
+
+#### http
+
+We can now modify the `handleErrorHttp` function in `internal/adapter/driving/server/http.go` to return the correct status code depending on the error.
+
+To check which error `err` is, we can use the `Is` function of the `errors` package](<https://pkg.go.dev/errors#Is>):
+
+```go
+// this returns true if err has an ErrorEventNotValid in it error tree
+errors.Is(err, domain.ErrorEventNotValid)
+```
+
+Add cases in `handleErrorHttp` to return the correct error code based on the error.
+
+#### cli
+
+For the cli server adapter, the code is already implemented in `handleError` in `internal/adapter/driving/server/cli.go`.
+
+You can check the code and test it manually:
+
+```bash
+make stack-up
+
+go build ./cmd/cli/main.go   
+
+# success
+./main light color -n mock -r 0 -b 100 -g 200
+
+# event not valid
+./main light color -n mock -r 0 -b 100 -g 400
+
+# target not found
+./main light color -n mockkk -r 0 -b 100 -g 200
+```
 
 ## Next
 
 To see the solutions:
 
 ```bash
-git checkout 5-data-validation-end
+git checkout 6-errors-end
 ```
 
 To go to the next step:
 
 ```bash
-git checkout 6-errors
+git checkout 7-cloud
 ```

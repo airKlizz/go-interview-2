@@ -8,8 +8,9 @@ import (
 
 func TestEvent_Validate(t *testing.T) {
 	tests := map[string]struct {
-		event   Event
-		wantErr bool
+		event       Event
+		wantValid   bool
+		wantReasons []string
 	}{
 		"OK valid change color event": {
 			event: Event{
@@ -18,6 +19,7 @@ func TestEvent_Validate(t *testing.T) {
 				Action: "change_color",
 				Args:   &Args{ChangeColorArgs: &ChangeColorArgs{Color: &Color{Blue: 200}}},
 			},
+			wantValid: true,
 		},
 		"KO wrong device": {
 			event: Event{
@@ -25,7 +27,8 @@ func TestEvent_Validate(t *testing.T) {
 				Device: "lightt",
 				Action: "on",
 			},
-			wantErr: true,
+			wantValid:   false,
+			wantReasons: []string{"Key: 'Event.Device' Error:Field validation for 'Device' failed on the 'oneof' tag"},
 		},
 		"KO wrong action": {
 			event: Event{
@@ -33,7 +36,8 @@ func TestEvent_Validate(t *testing.T) {
 				Device: "light",
 				Action: "onn",
 			},
-			wantErr: true,
+			wantValid:   false,
+			wantReasons: []string{"Key: 'Event.Action' Error:Field validation for 'Action' failed on the 'oneof' tag"},
 		},
 		"KO wrong args for event": {
 			event: Event{
@@ -42,7 +46,8 @@ func TestEvent_Validate(t *testing.T) {
 				Action: "change_color",
 				Args:   &Args{ChangeWhiteArgs: &ChangeWhiteArgs{}},
 			},
-			wantErr: true,
+			wantValid:   false,
+			wantReasons: []string{"missing args for action"},
 		},
 		"KO invalid change color event because Blue value 400": {
 			event: Event{
@@ -51,17 +56,15 @@ func TestEvent_Validate(t *testing.T) {
 				Action: "change_color",
 				Args:   &Args{ChangeColorArgs: &ChangeColorArgs{Color: &Color{Blue: 400}}},
 			},
-			wantErr: true,
+			wantValid:   false,
+			wantReasons: []string{"Key: 'Event.Args.ChangeColorArgs.Color.Blue' Error:Field validation for 'Blue' failed on the 'max' tag"},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := tt.event.Validate()
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
+			valid, reasons := tt.event.Validate()
+			require.Equal(t, tt.wantValid, valid)
+			require.Equal(t, tt.wantReasons, reasons)
 		})
 	}
 }

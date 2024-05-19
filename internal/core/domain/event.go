@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"errors"
-
 	"github.com/go-playground/validator/v10"
 )
 
@@ -47,24 +45,28 @@ type ChangeWhiteArgs struct {
 	White *White
 }
 
-func (e *Event) Validate() error {
+func (e *Event) Validate() (valid bool, reasons []string) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	err := validate.Struct(e)
 	if err != nil {
-		return err
+		for _, fieldErr := range err.(validator.ValidationErrors) {
+			reasons = append(reasons, fieldErr.Error())
+		}
+		valid = false
+		return
 	}
 
 	switch e.Action {
 	case ChangeColor:
 		if e.Args == nil || e.Args.ChangeColorArgs == nil || e.Args.ChangeColorArgs.Color == nil {
-			return errors.New("missing args for action")
+			return false, []string{"missing args for action"}
 		}
 	case ChangeWhite:
 		if e.Args == nil || e.Args.ChangeWhiteArgs == nil || e.Args.ChangeWhiteArgs.White == nil {
-			return errors.New("missing args for action")
+			return false, []string{"missing args for action"}
 		}
 	}
 
-	return nil
+	return true, nil
 
 }
