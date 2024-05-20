@@ -148,5 +148,5 @@ git checkout 6-errors-end
 To go to the next step:
 
 ```bash
-git checkout 7-cloud
+git checkout 7-end
 ```
