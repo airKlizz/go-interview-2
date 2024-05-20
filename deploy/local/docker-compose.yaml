@@ -1,0 +1,41 @@
+version: "3"
+services:
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "1883:1883"
+    command: mosquitto -c /mosquitto-no-auth.conf
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    depends_on:
+      - prometheus
+  pushgateway:
+    image: prom/pushgateway
+    ports:
+      - "9091:9091"
+  shelly_bulb_mock:
+    build:
+      context: ../../test/shelly_bulb_mock/.
+      dockerfile: Dockerfile
+    ports:
+      - "3333:3333"
+    environment:
+      MQTT_SERVER: tcp://mqtt:1883
+    depends_on:
+      - mqtt
+
+volumes:
+  grafana_data:

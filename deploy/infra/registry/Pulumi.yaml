@@ -1,0 +1,4 @@
+name: mynewgoproject-registry
+runtime:
+  name: go
+description: registry for mynewgoproject
