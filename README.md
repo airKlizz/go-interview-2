@@ -116,7 +116,7 @@ func NewShellyMqtt() port.Light {
 }
 ```
 
-🫵 Based on the previously created `main.go` file, you can complete the constructor and the methods. We want the Shelly MQTT struct to produce MQTT messages to perform the actions. The documentation of the Shelly bulb can help: [source](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
+Based on the previously created `main.go` file, you can complete the constructor and the methods. We want the Shelly MQTT struct to produce MQTT messages to perform the actions. The documentation of the Shelly bulb can help: [source](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
 
 Once the `shelly.go` file is completed, we can use the `ShellyMqtt` to change the color of the bulb to green. Replace the content of `cmd/main.go` with:
 
