@@ -4,9 +4,7 @@
 
 ### Vocabulary
 
-We can continue building the application and now see how to controlle the bulb.
-If we think our application following the hexagonal architecture, the light interface is a driven port and the Shelly MQTT implementation of it is an adapter.
-We now need a driving port to controlle the light that we call `Server`:
+We can continue building the application and now see how to control the bulb. If we think of our application following the hexagonal architecture, the light interface is a driven port, and the Shelly MQTT implementation of it is an adapter. We now need a driving port to control the light, which we call `Server`:
 
 ```go
 type Server interface {
@@ -17,7 +15,7 @@ type Server interface {
 }
 ```
 
-We can imagine multiple adapters of the `Server` port: a http server, a CLI, a website.
+We can imagine multiple adapters of the `Server` port: an HTTP server, a CLI, a website.
 
 To make the link between the driving and the driven ports, we have the controller service:
 
@@ -29,8 +27,7 @@ type Controller struct {
 func (c *Controller) Handle(ctx context.Context, event *domain.Event) error {}
 ```
 
-The controller knows the lights available and can handle events.
-A event is part of the domain definition of the application:
+The controller knows the lights available and can handle events. An event is part of the domain definition of the application:
 
 ```go
 type Event struct {
@@ -75,27 +72,26 @@ type ChangeWhiteArgs struct {
 }
 ```
 
-You can have a look to all the new files in `internal`.
-The services are already implemented.
+You can have a look at all the new files in `internal`. The services are already implemented so you can skip it if you want.
 
-### Server adapters
+### Server Adapters
 
-Now the vocabulary of the application is defined, we can work on implementing adapters of the server port to actually controlle the bulb.
+Now that the vocabulary of the application is defined, we can work on implementing adapters of the server port to actually control the bulb.
 
-We will do two adapters, a HTTP server and a CLI
+We will create two adapters: an HTTP server and a CLI.
 
-#### HTTP server
+#### HTTP Server
 
-In go, there are plenty of HTTP server, one of the most used is [Gin](https://github.com/gin-gonic/gin).
+In Go, we can use the standard `net/http` package to create an HTTP server.
 
-A structure of an implementation of a Gin server is made in the `internal/adapter/driving/server/http.go` file.
-There is a structure `HttpServer` which contains a `Server` and which can `Run()` to start the HTTP server.
+A structure of an implementation of an HTTP server is made in the `internal/adapter/driving/server/http.go` file. There is a structure `HttpServer` which contains a `Server` and which can `Run()` to start the HTTP server.
 
 The objective here is to get the data from the HTTP call and to call the server with this data.
 
-🫵 You can implement the Gin handler function of the file. The function should bind the data and call the server. Here is a useful [link](https://gin-gonic.com/docs/examples/bind-query-or-post/) to the Gin documentation.
+> **🛠️ Action Required:**
+> Implement the handler functions in the `http.go` file. The functions should parse the incoming request data and call the appropriate server methods. Here is an example of how to [parse JSON requests](https://go.dev/play/p/y_LWUROls8j).
 
-When the `HttpServer` is implemented, you can look to the `cmd/http/main.go` file which does the dependency injections and start the HTTP server, and run:
+When the `HttpServer` is implemented, you can look at the `cmd/http/main.go` file, which handles the dependency injections and starts the HTTP server. Then, run:
 
 ```bash
 go run cmd/http/main.go
@@ -103,7 +99,8 @@ go run cmd/http/main.go
 
 to start the HTTP server.
 
-You can change the bulb color with a curl command:
+> **🛠️ Action Required:**
+> You can change the bulb color with a curl command:
 
 ```bash
 curl -X POST --data '{"name": "mock", "color": {"blue": 200, "gain": 100}}' http://localhost:8080/light/color
@@ -113,15 +110,15 @@ The color of the bulb on [http://localhost:3333/](http://localhost:3333/) or usi
 
 #### CLI
 
-For building a CLI able to controlle the bulb, we can use the [Cobra](https://github.com/spf13/cobra) package.
-Similar to what we did for the HTTP server, we create a structure `CliServer` which contains a `Server` and which can `Run()` to execute the CLI.
+To build a CLI capable of controlling the bulb, we can use the [Cobra](https://github.com/spf13/cobra) package. Similar to what we did for the HTTP server, we create a structure `CliServer` which contains a `Server` and which can `Run()` to execute the CLI.
 
-The code is verbose for writing a CLI, therefore it is already written.
-You can look at it in `internal/adapter/driving/server/cli.go`.
+The code is verbose for writing a CLI, so it is already written. You can look at it in `internal/adapter/driving/server/cli.go`.
 
-🫵 You can copy the `cmd/http/main.go` file into `cmd/cli/main.go` file and adapt it to not run the `HttpServer` but the `CliServer`.
+> **🛠️ Action Required:**
+> Copy the `cmd/http/main.go` file into `cmd/cli/main.go` and adapt it to run the `CliServer` instead of the `HttpServer`.
 
-Run:
+> **🛠️ Action Required:**
+> Run:
 
 ```bash
 go run cmd/cli/main.go light color -n mock -r 100 -b 200 -g 100

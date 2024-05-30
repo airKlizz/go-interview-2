@@ -1,68 +1,66 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"mynewgoproject/internal/core/domain"
 	"mynewgoproject/internal/core/port/driving"
-
-	"github.com/gin-gonic/gin"
 )
 
 type HttpServer struct {
-	s driving.Server
-	r *gin.Engine
+	s   driving.Server
+	mux *http.ServeMux
 }
 
 func NewHttpServer(s driving.Server) *HttpServer {
-	r := gin.Default()
-	httpServer := &HttpServer{r: r, s: s}
-	lightR := r.Group("/light")
-	lightR.POST("/on", httpServer.lightOn())
-	lightR.POST("/off", httpServer.lightOff())
-	lightR.POST("/color", httpServer.lightChangeColor())
-	lightR.POST("/white", httpServer.lightChangeWhite())
+	mux := http.NewServeMux()
+	httpServer := &HttpServer{s: s, mux: mux}
+	mux.HandleFunc("/light/on", httpServer.lightOn())
+	mux.HandleFunc("/light/off", httpServer.lightOff())
+	mux.HandleFunc("/light/color", httpServer.lightChangeColor())
+	mux.HandleFunc("/light/white", httpServer.lightChangeWhite())
 	return httpServer
 }
 
 func (s *HttpServer) Run() error {
-	return s.r.Run()
+	return http.ListenAndServe(":8080", s.mux)
 }
 
-func (s *HttpServer) lightOn() func(ctx *gin.Context) {
+func (s *HttpServer) lightOn() http.HandlerFunc {
 	type args struct {
-		Name string
+		Name string `json:"name"`
 	}
-	return func(ctx *gin.Context) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		panic("not implemented")
 	}
 }
 
-func (s *HttpServer) lightOff() func(ctx *gin.Context) {
+func (s *HttpServer) lightOff() http.HandlerFunc {
 	type args struct {
-		Name string
+		Name string `json:"name"`
 	}
-	return func(ctx *gin.Context) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		panic("not implemented")
 	}
 }
 
-func (s *HttpServer) lightChangeColor() func(ctx *gin.Context) {
+func (s *HttpServer) lightChangeColor() http.HandlerFunc {
 	type args struct {
-		Name  string
-		Color *domain.Color
+		Name  string        `json:"name"`
+		Color *domain.Color `json:"color"`
 	}
-	return func(ctx *gin.Context) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		panic("not implemented")
 	}
 }
 
-func (s *HttpServer) lightChangeWhite() func(ctx *gin.Context) {
+func (s *HttpServer) lightChangeWhite() http.HandlerFunc {
 	type args struct {
-		Name  string
-		White *domain.White
+		Name  string        `json:"name"`
+		White *domain.White `json:"white"`
 	}
-	return func(ctx *gin.Context) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		panic("not implemented")
 	}
 }
@@ -75,12 +73,15 @@ type response struct {
 
 func newResponse(message string) response { return response{Message: message} }
 
-func handleErrorHttp(ctx *gin.Context, err error) {
+func handleErrorHttp(w http.ResponseWriter, err error) {
 	// we cannot correctly handle error for the moment
 	// it will be improved later
+	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, newResponse(err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(newResponse(err.Error()))
 	} else {
-		ctx.JSON(http.StatusOK, newResponse("success"))
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(newResponse("success"))
 	}
 }
