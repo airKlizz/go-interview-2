@@ -32,7 +32,13 @@ func (s *HttpServer) lightOn() http.HandlerFunc {
 		Name string `json:"name"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		panic("not implemented")
+		var a args
+		if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err := s.s.LightOn(r.Context(), a.Name)
+		handleErrorHttp(w, err)
 	}
 }
 
@@ -41,7 +47,13 @@ func (s *HttpServer) lightOff() http.HandlerFunc {
 		Name string `json:"name"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		panic("not implemented")
+		var a args
+		if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err := s.s.LightOff(r.Context(), a.Name)
+		handleErrorHttp(w, err)
 	}
 }
 
@@ -51,7 +63,13 @@ func (s *HttpServer) lightChangeColor() http.HandlerFunc {
 		Color *domain.Color `json:"color"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		panic("not implemented")
+		var a args
+		if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err := s.s.LightChangeColor(r.Context(), a.Name, a.Color)
+		handleErrorHttp(w, err)
 	}
 }
 
@@ -61,7 +79,13 @@ func (s *HttpServer) lightChangeWhite() http.HandlerFunc {
 		White *domain.White `json:"white"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		panic("not implemented")
+		var a args
+		if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err := s.s.LightChangeWhite(r.Context(), a.Name, a.White)
+		handleErrorHttp(w, err)
 	}
 }
 
