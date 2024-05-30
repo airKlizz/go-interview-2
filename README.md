@@ -6,7 +6,8 @@
 
 In this Hands-on, we will create a simple home automation system capable of controlling a [smart bulb via MQTT](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
 
-To start the local environment, run:
+> **🛠️ Action Required:**
+> To start the local environment, run:
 
 ```bash
 make stack-up
@@ -14,7 +15,8 @@ make stack-up
 
 This starts an MQTT broker, an observability stack, and a mock of the bulb implemented in the `test/shelly_bulb_mock` folder.
 
-You can see the bulb color by running:
+> **🛠️ Action Required:**
+> You can see the bulb color by running:
 
 ```bash
 make bulb-color
@@ -28,7 +30,8 @@ Let's write our first line of Go to produce an MQTT message that will change the
 
 #### Create Go Project
 
-First, when starting a Go project, you need to run the command:
+> **🛠️ Action Required:**
+> First, when starting a Go project, you need to run the command:
 
 ```bash
 go mod init mynewgoproject
@@ -36,7 +39,8 @@ go mod init mynewgoproject
 
 > Typically, the name given to a Go project is the path of the repository. In my case, it would be `gitlab.prod.aws.wescale.fr:remi.calizzano/goome`.
 
-Then create a file `main.go` with the following content:
+> **🛠️ Action Required:**
+> Then create a file `main.go` with the following content:
 
 ```go
 package main
@@ -46,7 +50,8 @@ func main() {
 }
 ```
 
-To run the code, use:
+> **🛠️ Action Required:**
+> To run the code, use:
 
 ```bash
 go run main.go
@@ -54,13 +59,15 @@ go run main.go
 
 #### MQTT in Go
 
-Install the MQTT package using:
+> **🛠️ Action Required:**
+> Install the MQTT package using:
 
 ```bash
 go get -u github.com/eclipse/paho.mqtt.golang
 ```
 
-Now we can update the `main.go` file to produce a simple MQTT message:
+> **🛠️ Action Required:**
+> Now we can update the `main.go` file to produce a simple MQTT message:
 
 ```go
 package main
@@ -109,7 +116,8 @@ func main() {
 }
 ```
 
-When running the Go code again, you should see a success log message. When you check the bulb color again, it should be red. You can play with the values in the data and see the bulb color change.
+> **🛠️ Action Required:**
+> When running the Go code again, you should see a success log message. When you check the bulb color again, it should be red. You can play with the values in the data and see the bulb color change.
 
 ### Next
 
