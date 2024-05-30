@@ -18,6 +18,9 @@ To follow this standard, we can move our `main.go` into a new `cmd` folder:
 mkdir cmd && mv main.go cmd/main.go
 ```
 
+> **🛠️ Action Required:**
+> Move `main.go` to the new `cmd` folder using the command above.
+
 ### Understanding Interfaces in Go
 
 In Go, an interface is a type that specifies a method set, providing a way to define the behavior that types must implement without specifying how these methods should be implemented. An interface is a named collection of method signatures.
@@ -116,7 +119,8 @@ func NewShellyMqtt() port.Light {
 }
 ```
 
-Based on the previously created `main.go` file, you can complete the constructor and the methods. We want the Shelly MQTT struct to produce MQTT messages to perform the actions. The documentation of the Shelly bulb can help: [source](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
+> **🛠️ Action Required:**
+> Based on the previously created `main.go` file, you can complete the constructor and the methods. We want the Shelly MQTT struct to produce MQTT messages to perform the actions. The documentation of the Shelly bulb can help: [source](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
 
 Once the `shelly.go` file is completed, we can use the `ShellyMqtt` to change the color of the bulb to green. Replace the content of `cmd/main.go` with:
 
@@ -147,7 +151,8 @@ func main() {
 }
 ```
 
-You can adapt the code based on your implementation of the `ShellyMqtt` and run it with:
+> **🛠️ Action Required:**
+> Replace the content of `cmd/main.go` with the above code and adapt it based on your implementation of the `ShellyMqtt`. Run it with:
 
 ```bash
 go run cmd/main.go
