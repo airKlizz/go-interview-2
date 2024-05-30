@@ -2,29 +2,60 @@
 
 ## 2 - Interface
 
-We have seen how to change the color of the bulb but this is very specific to the bulb we are using.
-We can use an interface to make is less specific.
+We have seen how to change the color of the bulb, but this is very specific to the bulb we are using. We can use an interface to make it less specific.
 
-### Folder structure
+### Folder Structure
 
-In Go, there are multiple ways of organizing a project and no specific rules expect one: all the package defined in the `internal/` folder cannot be imported by other projects.
-However, the following [standard](https://github.com/golang-standards/project-layout) is usually respected.
-In two words:
+In Go, there are multiple ways of organizing a project, with no specific rules except one: all the packages defined in the `internal/` folder cannot be imported by other projects. However, the following [standard](https://github.com/golang-standards/project-layout) is usually respected. In summary:
 
-* `/cmd` contains the main applications of the project
-* `/pkg` contains public packages
-* `/internal` contains private packages
+* `/cmd` contains the main applications of the project.
+* `/pkg` contains public packages.
+* `/internal` contains private packages.
 
-To respect the standard, we can move our `main.go` in a new `cmd` folder:
+To follow this standard, we can move our `main.go` into a new `cmd` folder:
 
 ```bash
 mkdir cmd && mv main.go cmd/main.go
 ```
 
-### Light interface
+### Understanding Interfaces in Go
 
-An interface in Go is a type which is a named collection of method signatures.
-For our light interface we can define it as follows (`/internal/core/port/light.go`):
+In Go, an interface is a type that specifies a method set, providing a way to define the behavior that types must implement without specifying how these methods should be implemented. An interface is a named collection of method signatures.
+
+For example:
+
+```go
+type MyInterface interface {
+    Method1(arg1 Type1) ReturnType1
+    Method2(arg2 Type2) ReturnType2
+}
+```
+
+A type implements an interface by implementing its methods. There is no explicit declaration of intent to implement an interface: it is satisfied implicitly.
+
+### Example
+
+```go
+type Lamp struct {
+    // fields
+}
+
+func (l Lamp) Method1(arg1 Type1) ReturnType1 {
+    // method implementation
+}
+
+func (l Lamp) Method2(arg2 Type2) ReturnType2 {
+    // method implementation
+}
+
+// Now, Lamp implements MyInterface because it has implemented all the methods of MyInterface
+```
+
+This implicit implementation allows for more flexible and decoupled designs, as any type that implements the necessary methods can be used wherever the interface is expected.
+
+### Light Interface
+
+For our light interface, we can define it as follows (`/internal/core/port/light.go`):
 
 ```go
 type Light interface {
@@ -37,7 +68,7 @@ type Light interface {
 
 We can switch on/off a light and change the color or the white temperature.
 
-The `Color` and `White` objects are parts of our domain (`/internal/core/domain/colors.go`):
+The `Color` and `White` objects are part of our domain (`/internal/core/domain/colors.go`):
 
 ```go
 type Color struct {
@@ -54,8 +85,7 @@ type White struct {
 }
 ```
 
-Now that we have the interface and the domain defined, we can implement the light interface for our Shelly MQTT.
-To implement an interface, the first step is to create a struct that has the methods defined in the interface:
+Now that we have the interface and the domain defined, we can implement the light interface for our Shelly MQTT. To implement an interface, the first step is to create a struct that has the methods defined in the interface:
 
 ```go
 type ShellyMqtt struct {
@@ -78,7 +108,7 @@ func (c *ShellyMqtt) SwitchOn(ctx context.Context) error {
 }
 ```
 
-A good practice is to also create a constructor that returns the interface, this makes sure the struct implements well the interface:
+A good practice is to also create a constructor that returns the interface, ensuring the struct correctly implements the interface:
 
 ```go
 func NewShellyMqtt() port.Light {
@@ -86,11 +116,9 @@ func NewShellyMqtt() port.Light {
 }
 ```
 
-🫵 Based on the previously made `main.go` file, you can complete the constructor and the methods. We want the Shelly MQTT struct to produce MQTT messages to perform the actions.
-The documentation of the Shelly bulb can help: [source](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
+🫵 Based on the previously created `main.go` file, you can complete the constructor and the methods. We want the Shelly MQTT struct to produce MQTT messages to perform the actions. The documentation of the Shelly bulb can help: [source](https://shelly-api-docs.shelly.cloud/gen1/#shelly-bulb-rgbw-mqtt).
 
-Once the `shelly.go` file completed, we can use the `ShellyMqtt` to change the color of the bulb to green.
-Replace the content of  `cmd/main.go` with:
+Once the `shelly.go` file is completed, we can use the `ShellyMqtt` to change the color of the bulb to green. Replace the content of `cmd/main.go` with:
 
 ```go
 package main
@@ -127,7 +155,7 @@ go run cmd/main.go
 
 ### Next
 
-If your `ShellyMqtt` is working correctly, you can directly go to the next step:
+If your `ShellyMqtt` is working correctly, you can proceed to the next step:
 
 ```bash
 git checkout 3-hexagonal
