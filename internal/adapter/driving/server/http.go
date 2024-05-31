@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"mynewgoproject/internal/core/domain"
@@ -98,14 +99,20 @@ type response struct {
 func newResponse(message string) response { return response{Message: message} }
 
 func handleErrorHttp(w http.ResponseWriter, err error) {
-	// we cannot correctly handle error for the moment
-	// it will be improved later
 	w.Header().Set("Content-Type", "application/json")
-	if err != nil {
+	switch {
+	case errors.Is(err, domain.ErrorEventNotValid):
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(newResponse(err.Error()))
+	case errors.Is(err, domain.ErrorDeviceNotFound):
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(newResponse(err.Error()))
+	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(newResponse(err.Error()))
-	} else {
+	default:
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(newResponse("success"))
 	}
+
 }
