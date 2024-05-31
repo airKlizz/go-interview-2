@@ -1,23 +1,21 @@
 # Goome
 
-## 5 - Data validation
+## 5 - Data Validation
 
-### Test the data validation
+### Test the Data Validation
 
-In Golang, testing is made with the official testing [package](https://pkg.go.dev/testing). I invite you to read the beginning of the page to have a quick overview of how to test a Go application. There are specificities but in two words:
+First, let's see what happens with the current code when we try to change the light color to an invalid value.
 
-- A function starting with `Test`, having `*testing.T` in the argument, and in a file ending with `_test.go` is a test (`func TestXxx(*testing.T)`).
-- You can test in the same package as the application (without exporting the package) or in a separate `_test` package for "black box" testing.
-- There are naming conventions for the names of a test function.
-- Tests can be run using `go test`.
+> **🛠️ Action Required:**
+> Add a test case to the `TestServer_LightChangeColor` function that tests changing the color to an invalid value (e.g., `Blue: 500`). You should see that it works, but we want the server to return an error indicating the color is not valid.
 
-### Data validation with [validator](https://github.com/go-playground/validator)
+### Data Validation with [validator](https://github.com/go-playground/validator)
 
-#### Introduction to the package
+#### Introduction to the Package
 
-The [validator](https://github.com/go-playground/validator) package allows to perform struct validation in Golang using tags in the structs.
+The [validator](https://github.com/go-playground/validator) package allows performing struct validation in Golang using tags.
 
-Here is a basic example of use of the package:
+Here is a basic example:
 
 ```go
 package main
@@ -35,97 +33,13 @@ type User struct {
 	Username string `validate:"required,min=3,max=16"`
 }
 
-#White: {
-	Temp:       uint & >=3000 & <=6500
-	Brightness: uint & >=0 & <=100
-}
-```
-
-It defines constraints for the Go structs contain in the `colors.go` file.
-
-```go
-package abs
-
-```cue
-package cue
-
-Event: {
-	Target: string
-	Device: "light"
-}
-
-### First Test
-
-Let's create the first test for our project. We can add tests for the `Controller` struct (`internal/core/service/controller.go`).
-
-#### Mocking
-
-The `Controller` struct is using the `Light` driven port. For testing only the code of the `Controller` struct, we need to mock the `Light` interface. There are multiple ways of creating mocks in Golang. Among them, the [`mockery` package](https://github.com/vektra/mockery) allows us to automatically generate a mock from an interface. Install it by running ([or other way](https://vektra.github.io/mockery/latest/installation/))
-
-```bash
-go install github.com/vektra/mockery/v2@v2.43.0
-```
-
-and generate the mocks using:
-
-```bash
-mockery
-```
-
-> **🛠️ Action Required:**
-> Install the package and generate the mocks. You can have a look at the `.mockery.yaml` file to see the configuration of the tool.
-
-#### Table-Driven Test
-
-Now that we have the mock we need, we can create the test for the `Controller`.
-
-> **🛠️ Action Required:**
-> Create the `controller_test.go` file in the same folder with the following content:
-
-```go
-package service
-
-import (
-	"context"
-	"errors"
-	"testing"
-
-	"mynewgoproject/internal/core/domain"
-	"mynewgoproject/internal/core/port/driven"
-
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-)
-
-func TestController_Handle(t *testing.T) {
-	type fields struct {
-		lights map[string]func() driven.Light
-	}
-	type args struct {
-		event *domain.Event
-	}
-	tests := map[string]struct {
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// include tests here
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			c := NewController()
-			for name, light := range tt.fields.lights {
-				c.WithLight(name, light())
-			}
-		}
-	} |
-	{
-		Action: "change_white"
-		Args: {
-			ChangeWhiteArgs: {
-				White: #White
-			}
-		}
+func main() {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	user := User{
+		Name:     "John Doe",
+		Email:    "john@example.com",
+		Age:      25,
+		Username: "johndoe123",
 	}
 	err := validate.Struct(user)
 	if err != nil {
@@ -135,43 +49,27 @@ func TestController_Handle(t *testing.T) {
 }
 ```
 
-> **Note:** Table-driven tests are usually used in Golang but this is not a requirement.
+#### Installation
 
-- `Device` can only be `"light"` as we support only this device.
-- Each `Action` should come with its `Args`
-
-#### Validation
-
-CUE provides a Go [package](https://pkg.go.dev/cuelang.org/go@v0.8.2/encoding/gocode) to generate Go validation code to the struct of a package based on a CUE schema.
-
-We will take advantage of `go generate` to generate validation code for the domain structs based on the CUE schema automaticaly.
-
-The code for this is not very interesting, therefore it is already present in the project:
-
-- `internal/core/domain/cue.mod` file to define the CUE module name
-- `internal/core/domain/doc.go` file containing the call to special comment for generation. The comment in the file simply says: run `go run ../../utils/gen/cue.go` when `go generate` is ran on this package.
-- `internal/utils/gen/cue.go` file that contains the code to use the CUE packages to generate the validation methods for the structs.
-
-With these files in the project, by running
+The package is already in the `go.mod` file, so run:
 
 ```bash
 go mod download
 ```
 
-You should see 0% coverage which is expected as there is no test case yet.
+#### Validate Event
 
-> **🛠️ Action Required:**
-> You can add some test cases to increase the coverage of the service package.
+Add validation tags to the structs in `internal/core/domain/colors.go` and `internal/core/domain/event.go`.
 
-For example, this is a valid test case
+Validation rules:
 
 - 0 <= Red, Green, Blue, White <= 255
 - 0 <= Gain, Brightness <= 100
 - 3000 <= Temp <= 6500
-- Device should be one if "light"
-- Action should be one if "on off change_color change_white"
+- Device should be "light"
+- Action should be one of "on", "off", "change_color", "change_white"
 
-Then, add the following method to the `event.go` file and implement it:
+Implement the following method in `event.go`:
 
 ```go
 func (e *Event) Validate() error {
@@ -179,47 +77,54 @@ func (e *Event) Validate() error {
 }
 ```
 
-Use the validator package like in the example but check also the correct args are present for the action (i.e. if the action is change_color then the change color args should be present)
+Use the validator package as shown in the example. Also, check the correct args for each action.
 
-When the implementation is done, run:
-
-```bash
-go test mynewgoproject/internal/core/domain
-```
-
-to make sure the implementation is correct.
+> **🛠️ Action Required:**
+> When the implementation is done, run:
+>
+> ```bash
+> go test mynewgoproject/internal/core/domain
+> ```
 
 ### Usage
 
-#### Validate Event in server
+#### Validate Event in Server
 
-Let's start by modifying the test case we added just before in `TestServer_LightChangeColor` with an invalid Blue value to make it match what we want.
-We want the `LightChangeColor` method to return an error when calling with an invalid color.
-Therefore change the `wantErr` bool of the test case to true and remove the expected call to the mock.
+> **🛠️ Action Required:**
+> Modify the test case in `TestServer_LightChangeColor` with an invalid Blue value, set `wantErr` to true, and remove the mock's expected call. You should see an error when running the test.
 
-When running the test you should see an error.
+> **🛠️ Action Required:**
+> Modify the code in `internal/core/service/server.go` to call the validate method of the Event struct and pass the test.
 
-Modify the code in `internal/core/service/server.go` to call the validate method of the Event struct and pass the test.
+> **🛠️ Action Required:**
+> Run the server test to be sure it works:
+>
+> ```bash
+> go test  mynewgoproject/internal/core/service 
+> ```
 
-#### Manual test
+#### Manual Test
 
-To make sure it works, we can do a quick manual test.
+To ensure it works, do a quick manual test.
 
 ```bash
-# start local stack if not already up
+# Start local stack if not already up
 make stack-up
 
-# build the CLI
+# Build the CLI
 go build ./cmd/cli/main.go
 
-# use the CLI with invalid data
+# Use the CLI with invalid data
 ./main light color -n bedroom -r 0 -b 400 -g 200
 ```
 
-#### Yet Another Test
+It should say:
 
-> **🛠️ Action Required:**
-> Following the same principle, you can create tests for the server. Copy-paste the `controller_test.go` into `server_test.go` and adapt it to the `Server` struct.
+```bash
+cli.go:94: failed to change color of the light
+```
+
+which is expected but not very helpful. We will next explore error management in Golang.
 
 ## Next
 
