@@ -4,29 +4,23 @@
 
 ### Objective
 
-We have seen that when an error occured, we have no information about it when using the CLI or the HTTP server.
-We would like to differenciate the different errors, to be able to respond the correct HTTP code for example.
+We have seen that when an error occurs, we have no detailed information about it when using the CLI or the HTTP server. We would like to differentiate between different errors to be able to respond with the correct HTTP status code, for example.
 
 ### Errors in Golang
 
-In Golang create a custom error is as simple as:
+In Golang, creating a custom error is as simple as:
 
 ```go
 var ErrNoObjectsFound = errors.New("no objects found")
 ```
 
-This works in many cases and is widely used.
-
-This approach allows to differentiate errors from each other but does not allow to add context to the error.
-For exemple, we can create a custom error for an event not valid:
+This approach works in many cases and is widely used. However, while it allows differentiation between errors, it does not allow adding context to the error. For example, we can create a custom error for an invalid event:
 
 ```go
 var ErrEventNotValid = errors.New("event not valid")
 ```
 
-but we cannot add the reasons why the event is not valid.
-
-To do so, we can create a new struct that implements the `error` interface:
+but we cannot add reasons why the event is not valid. To do so, we can create a new struct that implements the `error` interface:
 
 ```go
 type error interface {
@@ -38,7 +32,8 @@ type error interface {
 
 Let's create this custom error.
 
-In the `internal/core/domain` folder, create a new file called `errors.go` with the following content:
+> **🛠️ Action Required:**
+> In the `internal/core/domain` folder, create a new file called `errors.go` with the following content:
 
 ```go
 package domain
@@ -70,19 +65,20 @@ func (err ErrEventNotValid) Is(target error) bool {
 	_, ok := target.(ErrEventNotValid)
 	return ok
 }
+```
 
-We create a struct `ErrEventNotValid` with as reasons a list of string coming from the validation of the event.
-The struct implements the `error` interface with the `Error() string` method.
-We also implement the `Is(target error) bool` method to make the `Is` function from the `errors` standard package working (see [doc](https://pkg.go.dev/errors#Is) for details).
+We create a struct `ErrEventNotValid` with reasons being a list of strings from the event validation. The struct implements the `error` interface with the `Error() string` method. We also implement the `Is(target error) bool` method to make the `Is` function from the `errors` package work (see [doc](https://pkg.go.dev/errors#Is) for details).
 
-You can have a look to the `Validate` method of the `Event` struct which has been slighly modified to return the reasons when an event is not valid.
+You can review the `Validate` method of the `Event` struct, which has been slightly modified to return the reasons when an event is not valid.
 
-### More custom errors
+### More Custom Errors
 
-We have seen how to create a custom error with context stored into the error.
+We have seen how to create a custom error with context stored in the error.
 
-We can now create simpler errors for the other things that can be wrong in our application.
-Add the following errors in `errors.go`:
+Now we can create simpler errors for other things that can go wrong in our application.
+
+> **🛠️ Action Required:**
+> Add the following errors in `errors.go`:
 
 ```go
 var (
@@ -93,49 +89,50 @@ var (
 )
 ```
 
-### Usage of the custom errors in the services
+### Usage of Custom Errors in the Services
 
-Modify the `Server` and the `Controller` methods to return the correct errors.
-In `server.go` make the code complient with the new Validate method and use the `NewErrEventNotValid` constructor.
-In `controller.go` replace the return statements with an error in the Handle method with the correct custom error.
+> **🛠️ Action Required:**
+> Modify the `Server` and `Controller` methods to return the correct errors. In `server.go`, make the code compliant with the new `Validate` method and use the `NewErrEventNotValid` constructor. In `controller.go`, replace the return statements with an error in the `Handle` method with the correct custom error.
 
-At this step, the code returns specific errors depending of what happended in the services but we don't use them in the server adapters (cli and http).
+At this step, the code returns specific errors depending on what happened in the services, but we don't use them in the server adapters (CLI and HTTP).
 
-### Usage of the custom errors in the server adapters
+### Usage of Custom Errors in the Server Adapters
 
-#### http
+#### HTTP
 
 We can now modify the `handleErrorHttp` function in `internal/adapter/driving/server/http.go` to return the correct status code depending on the error.
 
-To check which error `err` is, we can use the `Is` function of the `errors` package](<https://pkg.go.dev/errors#Is>):
+To check which error `err` is, we can use the `Is` function of the `errors` package:
 
 ```go
-// this returns true if err has an ErrorEventNotValid in it error tree
+// this returns true if err has an ErrorEventNotValid in its error tree
 errors.Is(err, domain.ErrorEventNotValid)
 ```
 
-Add cases in `handleErrorHttp` to return the correct error code based on the error.
+> **🛠️ Action Required:**
+> Add cases in `handleErrorHttp` to return the correct error code based on the error.
 
-#### cli
+#### CLI
 
-For the cli server adapter, the code is already implemented in `handleError` in `internal/adapter/driving/server/cli.go`.
+For the CLI server adapter, the code is already implemented in `handleError` in `internal/adapter/driving/server/cli.go`.
 
-You can check the code and test it manually:
-
-```bash
-make stack-up
-
-go build ./cmd/cli/main.go   
-
-# success
-./main light color -n mock -r 0 -b 100 -g 200
-
-# event not valid
-./main light color -n mock -r 0 -b 100 -g 400
-
-# target not found
-./main light color -n mockkk -r 0 -b 100 -g 200
-```
+> **🛠️ Action Required:**
+> You can check the code and test it manually:
+>
+> ```bash
+> make stack-up
+> 
+> go build ./cmd/cli/main.go   
+> 
+> # success
+> ./main light color -n mock -r 0 -b 100 -g 200
+> 
+> # event not valid
+> ./main light color -n mock -r 0 -b 100 -g 400
+> 
+> # target not found
+> ./main light color -n mockkk -r 0 -b 100 -g 200
+> ```
 
 ## Next
 
