@@ -4,14 +4,12 @@
 
 ### Overview
 
-In Golang, testing is made with the official testing [package](https://pkg.go.dev/testing).
-I invite you to read the begining of the page to have a quick overview of how test a Go application.
-There are specificities but in two words:
+In Golang, testing is made with the official testing [package](https://pkg.go.dev/testing). I invite you to read the beginning of the page to have a quick overview of how to test a Go application. There are specificities but in two words:
 
-* a function starting with `Test`, having `*testing.T` in arg, and in a file ended with `_test.go` is a test (`func TestXxx(*testing.T)`)
-* you can test in the same package as the application (without exporting the package) or in a separate `_test` package for "black box" testing
-* there are naming conventions for the names of a test function
-* tests can be run using `go test`
+- A function starting with `Test`, having `*testing.T` in the argument, and in a file ending with `_test.go` is a test (`func TestXxx(*testing.T)`).
+- You can test in the same package as the application (without exporting the package) or in a separate `_test` package for "black box" testing.
+- There are naming conventions for the names of a test function.
+- Tests can be run using `go test`.
 
 Here is a valid test sample:
 
@@ -30,7 +28,7 @@ func TestAbs(t *testing.T) {
 
 In addition to the official `testing` package, the [`testify` package](https://github.com/stretchr/testify) is widely used for assertions and testing:
 
-```golang
+```go
 package abs
 
 import (
@@ -46,18 +44,13 @@ func TestAbs(t *testing.T) {
 }
 ```
 
-### First test
+### First Test
 
-Let's create the first test for our project.
-We can add tests for the `Controller` struct (`internal/core/service/controller.go`).
+Let's create the first test for our project. We can add tests for the `Controller` struct (`internal/core/service/controller.go`).
 
 #### Mocking
 
-The `Controller` struct is using the `Light` driven port.
-For testing only the code of the `Controller` struct, we need to mock the `Light` interface.
-There are multiple ways of creating mocks in Golang.
-Among them, the [`mockery` package](https://github.com/vektra/mockery) allows to automaticaly generate a mock from an interface.
-Install it by running ([or other way](https://vektra.github.io/mockery/latest/installation/)):
+The `Controller` struct is using the `Light` driven port. For testing only the code of the `Controller` struct, we need to mock the `Light` interface. There are multiple ways of creating mocks in Golang. Among them, the [`mockery` package](https://github.com/vektra/mockery) allows us to automatically generate a mock from an interface. Install it by running ([or other way](https://vektra.github.io/mockery/latest/installation/)):
 
 ```bash
 go install github.com/vektra/mockery/v2@v2.43.0
@@ -69,12 +62,15 @@ and generate the mocks using:
 mockery
 ```
 
-> you can have a look to the `.mockery.yaml` file to see the configuration of the tool
+> **🛠️ Action Required:**
+> Install the package and generate the mocks. You can have a look at the `.mockery.yaml` file to see the configuration of the tool.
 
-#### Table-Driven test
+#### Table-Driven Test
 
 Now that we have the mock we need, we can create the test for the `Controller`.
-First, create the `controller_test.go` file in the same folder with the following content:
+
+> **🛠️ Action Required:**
+> Create the `controller_test.go` file in the same folder with the following content:
 
 ```go
 package service
@@ -122,8 +118,7 @@ func TestController_Handle(t *testing.T) {
 }
 ```
 
->
-> table-driven tests are usually used in Golang but this is not a need
+> **Note:** Table-driven tests are usually used in Golang but this is not a requirement.
 
 To run the test with coverage, do:
 
@@ -131,11 +126,12 @@ To run the test with coverage, do:
 go test mynewgoproject/internal/core/service -cover
 ```
 
-You should see 0% of coverage which is expected as there is no test case yet.
+You should see 0% coverage which is expected as there is no test case yet.
 
-You can add some test cases to increase the coverage of service package.
+> **🛠️ Action Required:**
+> You can add some test cases to increase the coverage of the service package.
 
-For exemple, this is a valid test case:
+For example, this is a valid test case:
 
 ```go
 "OK switch on light": {
@@ -154,10 +150,10 @@ For exemple, this is a valid test case:
 },
 ```
 
-#### Yet another test
+#### Yet Another Test
 
-Following the same principle, you can create tests for the server.
-Copy-paste the `controller_test.go` into `server_test.go` and adapt to the `Server` struct.
+> **🛠️ Action Required:**
+> Following the same principle, you can create tests for the server. Copy-paste the `controller_test.go` into `server_test.go` and adapt it to the `Server` struct.
 
 ## Next
 
